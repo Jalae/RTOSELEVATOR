@@ -1,9 +1,10 @@
 /*
  * File: frequency.c
- * Author: Kehnin Dyer
+ * Author: Kehnin Dyer and Sean.Connolly
  *
  * Created on June 6, 2013, 10:00 PM
  */
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //Generic units and unit conversion factors
@@ -44,9 +45,10 @@ int   DestFt = 0; //updates from control
 float CurFt  = 0.0L; //internal state height
 float CurVel = 0.0L;
 
-extern int FlashTime_ms = -1; //this is for blinky
+int SwitchDuration = -1; //this is for blinky
 
-int   Dir    = 0; //Pos 1 for up, neg 1 for down
+int Dir    = 0; //Pos 1 for up, neg 1 for down
+int Emergency = 0;
 
 //calculated generic unit values
 float TPSAccel       = 0.0L;
@@ -57,24 +59,43 @@ float TDestination   = 0.0L;
 
 float TStopPoint = 0.0L;
 
+
+//Externally defined variables:
+extern TelemetryContainer Info;
+extern DestinationContainer Dest;
+extern xQueueHandle VelocityUpdateQ;
+extern xQueueHandle AccelerationUpdateQ;
+
+extern vTaskHandle BlinkyHandle;
+
 int vCalculateFrequency()
 {
     int toofast;
     
-    if( xSemaphoreTake( EMERGENCYSTOP, (portTickType) portMAX_DELAY ) == pdTRUE )
+    if( xSemaphoreTake( Button_B, (portTickType)0 ) == pdTRUE )
     {
+        Emergency = 1;
+        xSemaphoreGive( Button_B );
+    }
+    if( xSemaphoreTake( Button_N, (portTickType)0 ) == pdTRUE )
+    {
+        Emergency = 0;
+        xSemaphoreGive( Button_B );
+    }
+    if(Emergency)
         DestFt = 0; //oh god
-        xSemaphoreGive( EMERGENCYSTOP );
-    }
 
-    //TODO: get real names :/
-    if(uxQueueMessagesWaiting( FrequencyUpdate ))
+
+    if(uxQueueMessagesWaiting( VelocityUpdateQ ))
     {
-        Accel = newthingAccel;
-        maxVelocity = newthingVelocity;
+        xQueueReceive(VelocityUpdateQ, &(maxVelocity), (portTickType) 0);
+    }
+    if(uxQueueMessagesWaiting( AccelerationUpdateQ ))
+    {
+        xQueueReceive(AccelerationUpdateQ, &(Accel), (portTickType) 0);
     }
 
-    FlashTime_ms   = TPSCurVelocity? (int)MSperTPS/(TPSCurVelocity) : 0;
+    SwitchDuration = TPSCurVelocity? (int)MSperTPS/(TPSCurVelocity) : 0;
     TPSAccel       = TPSSperFPSS * Accel;
     TPSMaxVelocity = TPSperFPS * maxVelocity;
 
@@ -104,68 +125,57 @@ int vCalculateFrequency()
 
     //is the new magnitude of velocity greater than the max
     toofast = ( (((TPSCurVelocity + Dir*TPSAccel) > 0) * (TPSCurVelocity + Dir*TPSAccel)) > TPSMaxVelocity );
-    TPSCurVelocity = Dir ? (toofast ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
+    TPSCurVelocity = Dir ? (toofastsean connolly ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
 
     CurVel = TPSCurVelocity/TPSperFPS;
-    
-    if(xSemaphoreTake( CLISEMAPHORE, (portTickType) portMAX_DELAY) == pdTRUE )
-    { //TODO: get real names
-        CLICURRENTSPEED  = CurVel;
-        CLICURRENTHEIGHT = CurFt;
-        xSemaphoreGive(CLISEMAPHORE);
-    }
+
+    //write the data for serialwriter
+    taskENTER_CRITICAL;
+    Info.Velocity  = CurVel;
+    Info.Elevation = CurFt;
+    taskENTER_CRITICAL;
+
     return CurVel;
 }
 
-void vtaskFrequency()
+void Frequency(void)
 {
     int rolling;
     while(1)
     {
-        FlashTime_ms = -1;
-        if( CONTROLSEMAPHOR != NULL )
+        SwitchDuration = -1;
+        if( xSemaphoreTake( Dest.DataAvailable , (portTickType) portMAX_DELAY ) == pdTRUE )
         {
-            if( xSemaphoreTake( CONTROLSEMAPHOR, (portTickType) portMAX_DELAY ) == pdTRUE )
-            {
-                FlashTime_ms = 0;
-                DestFt = newthingyDESTINATION; //TODO:realname
-                vTaskResume( HANDLETOBLINKY );
+            SwitchDuration = 0;
+            DestFt = Dest.TargetElevation;
+            vTaskResume( BlinkyHandle );
 
-                do
-                {
-                    rolling = vCalculateFrequency(); // returns the speed, so when it's done, it's done.
-                    vTaskDelay( (portTickType) FQ_REZ/portTICK_RATE_MS )
-                }while(rolling);
-                xSemaphoreGive( CONTROLSEMAPHOR );
-            }
+            do
+            {
+                rolling = vCalculateFrequency(); // returns the speed, so when it's done, it's done.
+                vTaskDelay( (portTickType) FQ_REZ/portTICK_RATE_MS )
+            }while(rolling);
+            xSemaphoreGive( Dest.DataAvailable );
         }
     }
 }
 
 
-
-//used for testing vCalculateFrequency in isolation
-/*
-#include <iostream.h>
-using namespace std;
-int main()
+void Blinky(void)
 {
-    while(1)
+    LED_CLR(LED_MOTOR_MASK);
+    for(;;)
     {
-        DestFt = 500;
-        vCalculateFrequency();
-        system("cls");
-        cout 
-            << "Destination: " << DestFt << "\n"
-            << "TPS DEST   : " << TDestination << "\n"
-            << "Height     : " << CurFt  << "\n"
-            << "TPS HEIGHT : " << TDistance << "\n"
-            << "Speed      : " << CurVel << "\n"
-            << "TPS VEL    : " << TPSCurVelocity << "\n"
-            << "Direction  : " << Dir    << "\n"
-            << "Flash      : " << flashtime_ms << "\n\n";
-        system("ping -w 128.0.0.1 >null");
+        if(SwitchDuration >= 0)
+        {
+            vTaskDelay(SwitchDuration / portTICK_RATE_MS);
+            LED_INV(LED_MOTOR_MASK);
+        }
+        else
+        {
+            LED_CLR(LED_MOTOR_MASK);
+            vTaskSuspend(NULL);
+        }
     }
-	return 0;
+    vTaskDelete(NULL);
 }
-*/
