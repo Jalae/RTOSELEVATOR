@@ -4,9 +4,9 @@
     xSemaphoreHandle CN_AnyButton;
     xSemaphoreHandle CN_ButtonRC1;
     xSemaphoreHandle CN_ButtonRC2;
-    xSemaphoreHandle CN_ButtonRD0;
-    xSemaphoreHandle CN_ButtonRD1;
-    xSemaphoreHandle CN_ButtonRD2;
+    xSemaphoreHandle CN_ButtonRD6;
+    xSemaphoreHandle CN_ButtonRD7;
+    xSemaphoreHandle CN_ButtonRD13;
 
 
 //Function for scanning designated port pins.
@@ -50,37 +50,37 @@ void Button_scanTask(void)
                 xSemaphoreGive(CN_ButtonRC2);
             }
         }
-        if((PortD & BUTTON_RD0_MASK) && !(PortDPressed & BUTTON_RD0_MASK))
+        if((PortD & BUTTON_RD6_MASK) && !(PortDPressed & BUTTON_RD6_MASK))
         {
             //We have a hit - wait a sec and confirm:
             vTaskDelay(DEBOUNCE_DELAY_MS/portTICK_RATE_MS);
-            if(PortD & BUTTON_RD0_MASK)
+            if(PortD & BUTTON_RD6_MASK)
             {
                 //Confirmed hit - mark it!
                 xSemaphoreGive(CN_AnyButton);
-                xSemaphoreGive(CN_ButtonRD0);
+                xSemaphoreGive(CN_ButtonRD6);
             }
         }
-        if((PortD & BUTTON_RD1_MASK) && !(PortDPressed & BUTTON_RD1_MASK))
+        if((PortD & BUTTON_RD7_MASK) && !(PortDPressed & BUTTON_RD7_MASK))
         {
             //We have a hit - wait a sec and confirm:
             vTaskDelay(DEBOUNCE_DELAY_MS/portTICK_RATE_MS);
-            if(PortD & BUTTON_RD1_MASK)
+            if(PortD & BUTTON_RD7_MASK)
             {
                 //Confirmed hit - mark it!
                 xSemaphoreGive(CN_AnyButton);
-                xSemaphoreGive(CN_ButtonRD1);
+                xSemaphoreGive(CN_ButtonRD7);
             }
         }
-        if((PortD & BUTTON_RD2_MASK) && !(PortDPressed & BUTTON_RD2_MASK))
+        if((PortD & BUTTON_RD13_MASK) && !(PortDPressed & BUTTON_RD13_MASK))
         {
             //We have a hit - wait a sec and confirm:
             vTaskDelay(DEBOUNCE_DELAY_MS/portTICK_RATE_MS);
-            if(PortD & BUTTON_RD2_MASK)
+            if(PortD & BUTTON_RD13_MASK)
             {
                 //Confirmed hit - mark it!
                 xSemaphoreGive(CN_AnyButton);
-                xSemaphoreGive(CN_ButtonRD2);
+                xSemaphoreGive(CN_ButtonRD13);
             }
         }
 

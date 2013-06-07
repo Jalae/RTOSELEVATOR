@@ -26,19 +26,19 @@ extern "C" {
     extern xSemaphoreHandle CN_AnyButton;
     extern xSemaphoreHandle CN_ButtonRC1;
     extern xSemaphoreHandle CN_ButtonRC2;
-    extern xSemaphoreHandle CN_ButtonRD0;
-    extern xSemaphoreHandle CN_ButtonRD1;
-    extern xSemaphoreHandle CN_ButtonRD2;
+    extern xSemaphoreHandle CN_ButtonRD6;
+    extern xSemaphoreHandle CN_ButtonRD7;
+    extern xSemaphoreHandle CN_ButtonRD13;
 
 
     //Useful Constants:
 #define BUTTON_PORTC_MASK     0x00000006
 #define BUTTON_RC1_MASK       0x00000002    //6 - 
 #define BUTTON_RC2_MASK       0x00000004    //7 - 
-#define BUTTON_PORTD_MASK     0x00000007
-#define BUTTON_RD0_MASK       0x00000001    //72
-#define BUTTON_RD1_MASK       0x00000002    //76
-#define BUTTON_RD2_MASK       0x00000004    //77
+#define BUTTON_PORTD_MASK     0x000020C0
+#define BUTTON_RD6_MASK       0x00000040    //72
+#define BUTTON_RD7_MASK       0x00000080    //76
+#define BUTTON_RD13_MASK      0x00002000    //77
 
 #define BUTTON_TASK_PRIORITY      1
 
@@ -56,12 +56,12 @@ vSemaphoreCreateBinary(CN_ButtonRC1);\
 xSemaphoreTake(CN_ButtonRC1, 0);\
 vSemaphoreCreateBinary(CN_ButtonRC2);\
 xSemaphoreTake(CN_ButtonRC2, 0);\
-vSemaphoreCreateBinary(CN_ButtonRD0);\
-xSemaphoreTake(CN_ButtonRD0, 0);\
-vSemaphoreCreateBinary(CN_ButtonRD1);\
-xSemaphoreTake(CN_ButtonRD1, 0);\
-vSemaphoreCreateBinary(CN_ButtonRD2);\
-xSemaphoreTake(CN_ButtonRD2, 0);\
+vSemaphoreCreateBinary(CN_ButtonRD6);\
+xSemaphoreTake(CN_ButtonRD6, 0);\
+vSemaphoreCreateBinary(CN_ButtonRD7);\
+xSemaphoreTake(CN_ButtonRD7, 0);\
+vSemaphoreCreateBinary(CN_ButtonRD13);\
+xSemaphoreTake(CN_ButtonRD13, 0);\
 vSemaphoreCreateBinary(CN_AnyButton);\
 xSemaphoreTake(CN_AnyButton, 0)
     
