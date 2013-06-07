@@ -66,7 +66,7 @@ extern DestinationContainer Dest;
 extern xQueueHandle VelocityUpdateQ;
 extern xQueueHandle AccelerationUpdateQ;
 
-extern vTaskHandle BlinkyHandle;
+extern xTaskHandle BlinkyHandle;
 
 int vCalculateFrequency()
 {

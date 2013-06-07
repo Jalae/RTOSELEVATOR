@@ -19,9 +19,9 @@
 
 //Function Prototypes:
 //Frequency Generator for Motor Control Output
-void Frequency(void);
+extern void Frequency(void);
 //Motor Control Output function
-void Blinky(void);
+extern void Blinky(void);
 
 #endif
 

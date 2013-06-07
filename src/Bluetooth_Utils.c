@@ -133,10 +133,11 @@ void BT_UART_ISR(void)
         static portBASE_TYPE lineDone = pdTRUE;
         static unsigned int lineCount = 0;
         static unsigned int lineLength = 0;
+        IFS0bits.U1TXIF = 0;
         IEC0bits.U1TXIE = 0;
         //The write interrupt has been asserted!
         //Since this interrupt is configured to post whenever the queue is empty, we can dump 8 characters at a time.
-        if((lineDone == pdTRUE) && (uxQueueMessagesWaiting(BT_TxMessageQ)!= 0))
+        if((lineDone == pdTRUE) && (uxQueueMessagesWaitingFromISR(BT_TxMessageQ)!= 0))
         {
             //There is a message waiting for transmission - grab it!
             xQueueReceiveFromISR(BT_TxMessageQ, g_BT_TxBuffer, &xHigherPriorityTaskWoken);
@@ -159,7 +160,7 @@ void BT_UART_ISR(void)
                 lineCount = 0;
             }
             //See if we're done - if so, disable the interrupt.
-            if(lineDone == pdTRUE && uxQueueMessagesWaiting(BT_TxMessageQ) == 0)
+            if(lineDone == pdTRUE && uxQueueMessagesWaitingFromISR(BT_TxMessageQ) == 0)
             {
                 //We're done here - disable the interrupt.
                 IEC0bits.U1TXIE = 0;
