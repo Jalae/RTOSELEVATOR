@@ -29,8 +29,8 @@ int FQ_REZ = 10;  //The number of milliseconds per computation slice
     // | -------------- X --------- X ------------ X ------- X -------  |    s X ------- = ---------------------- period
     // \         Slice    FQ_REZ ms   FQ_UNIT Tick         s   10 ft/s /              s          TPSCurVel
     //
-float TPSSperMPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000;
-float TPSperMPS   = FQ_UNIT*FQ_REZ/1000;
+float TPSSperFPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000;
+float TPSperFPS   = FQ_UNIT*FQ_REZ/1000;
 float MSperTPS    = (5 * FQ_UNIT * FQ_REZ);
 
 
@@ -41,10 +41,11 @@ int Accel        = 2 ;  //The acceleration of the lift in units/ss
 //working variables
 int   DestFt = 0; //updates from control
 
-float CurFt  = 0; //internal state height
+float CurFt  = 0.0L; //internal state height
+float CurVel = 0.0L;
 int   flashtime_ms = -1; //this is for blinky
 
-int   Dir    = 0; //might not be used?
+int   Dir    = 0; //Pos 1 for up, neg 1 for down
 
 //calculated generic unit values
 float TPSAccel       = 0.0L;
@@ -53,7 +54,9 @@ float TPSCurVelocity = 0.0L;
 float TDistance      = 0.0L;
 float TDestination   = 0.0L;
 
-void vCalculateFrequency()
+float TStopPoint = 0.0L;
+
+int vCalculateFrequency()
 {
 
     //TODO
@@ -61,22 +64,45 @@ void vCalculateFrequency()
 
 
     flashtime_ms   = (int)MSperTPS/(TPSCurVelocity);
-    TPSAccel       = TPSSperMPSS * acceleration;
-    TPSMaxVelocity = TPSperMPS * maxVelocity;
+    TPSAccel       = TPSSperFPSS * acceleration;
+    TPSMaxVelocity = TPSperFPS * maxVelocity;
 
-    TDistance      = 
-}
+    TDestination = FQ_UNIT * DestFt; // this _shouldn't_ change, but it can... as in EMERGENCY STOP
+    TDistance = TPSCurVelocity + tDistance;
+    CurFt = tDistance/FQ_UNIT;
 
-void vtaskFrequency()
-{
+    //due to float use == is bad so lets add some wiggle room
+    Dir = (DestFt > Curft + .001L) ? 1 : ((DestFt < Curft - .001L) ? -1 : 0 );
+        //NOTE: there is a chance that a change in accel or max velocity will cause unintended behavior,
+        // one instance of that is changeing accel so that stoping in time is impossible, this will hopefully
+        // catch that and cause an abrupt stop.
+        //(it is possible that it will move too fast and jump past the stop window)
 
-    //wait for lock
-        tDestination
     //to calculate distance to stop:
     // E1)  Df = Di + Vi*T+.5AT^2
     // E2)  Vf = Vi + AT
     // Df = distance, Di = 0, Vi = 0, A = Accel, Vf = maxVelocity
     // solve E2 for T, Plug in T in E1 to solve...
     // Distance = .5 maxVelocity^2 / Accel
-    //units are determined by vel and accel, and since we want Ticks TPS and TPSS it is
+    //units are determined by vel and accel, and since we want Ticks TPS and TPSS it is...
+    TStopPoint = TDestination - Dir*((.5 * TPSCurVelocity * TPSCurVelocity) / TPSAccel)
+        //really likeing the Dir variable. if we are headed down we add the stop distance, if up we subtract
+
+    //if we are past the stop point in the next slice, time to slow down.
+    if(Dir*TDistance >= Dir*TStopPoint)
+        Dir = -Dir; //invert that direction to decelerate to 0.
+
+    //is the new magnitude of velocity greater than the max
+    int toofast = ((0x7FFFFFFF)&(TPSCurVelocity + Dir*TPSAccel) > TPSMaxVelocity);
+    TPSCurVelocity = Dir ? (toofast ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
+
+    CurVel = TPSCurVelocity/TPSperFPS;
+    return CurVel;
+}
+
+void vtaskFrequency()
+{
+
+    //wait for lock
+        //update DestFt
 }
