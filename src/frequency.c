@@ -43,7 +43,8 @@ int   DestFt = 0; //updates from control
 
 float CurFt  = 0.0L; //internal state height
 float CurVel = 0.0L;
-int   flashtime_ms = -1; //this is for blinky
+
+extern int FlashTime_ms = -1; //this is for blinky
 
 int   Dir    = 0; //Pos 1 for up, neg 1 for down
 
@@ -58,12 +59,22 @@ float TStopPoint = 0.0L;
 
 int vCalculateFrequency()
 {
+    int toofast;
+    
+    if( xSemaphoreTake( EMERGENCYSTOP, (portTickType) portMAX_DELAY ) == pdTRUE )
+    {
+        DestFt = 0; //oh god
+        xSemaphoreGive( EMERGENCYSTOP );
+    }
 
-    //TODO
-    //check queue for value, if exists update maxVelocity and Acceleration
+    //TODO: get real names :/
+    if(uxQueueMessagesWaiting( FrequencyUpdate ))
+    {
+        Accel = newthingAccel;
+        maxVelocity = newthingVelocity;
+    }
 
-
-    flashtime_ms   = TPSCurVelocity? (int)MSperTPS/(TPSCurVelocity) : 0;
+    FlashTime_ms   = TPSCurVelocity? (int)MSperTPS/(TPSCurVelocity) : 0;
     TPSAccel       = TPSSperFPSS * Accel;
     TPSMaxVelocity = TPSperFPS * maxVelocity;
 
@@ -86,25 +97,51 @@ int vCalculateFrequency()
     // Distance = .5 maxVelocity^2 / Accel
     //units are determined by vel and accel, and since we want Ticks TPS and TPSS it is...
     TStopPoint = TDestination - Dir*((.5 * TPSCurVelocity * TPSCurVelocity) / TPSAccel);
-        //really likeing the Dir variable. if we are headed down we add the stop distance, if up we subtract
 
     //if we are past the stop point in the next slice, time to slow down.
     if(Dir*TDistance >= Dir*TStopPoint)
         Dir = -Dir; //invert that direction to decelerate to 0.
 
     //is the new magnitude of velocity greater than the max
-    int toofast = ((0x7FFFFFFF)&(TPSCurVelocity + Dir*TPSAccel) > TPSMaxVelocity);
+    toofast = ( (((TPSCurVelocity + Dir*TPSAccel) > 0) * (TPSCurVelocity + Dir*TPSAccel)) > TPSMaxVelocity );
     TPSCurVelocity = Dir ? (toofast ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
 
     CurVel = TPSCurVelocity/TPSperFPS;
+    
+    if(xSemaphoreTake( CLISEMAPHORE, (portTickType) portMAX_DELAY) == pdTRUE )
+    { //TODO: get real names
+        CLICURRENTSPEED  = CurVel;
+        CLICURRENTHEIGHT = CurFt;
+        xSemaphoreGive(CLISEMAPHORE);
+    }
     return CurVel;
 }
+
 void vtaskFrequency()
 {
+    int rolling;
+    while(1)
+    {
+        FlashTime_ms = -1;
+        if( CONTROLSEMAPHOR != NULL )
+        {
+            if( xSemaphoreTake( CONTROLSEMAPHOR, (portTickType) portMAX_DELAY ) == pdTRUE )
+            {
+                FlashTime_ms = 0;
+                DestFt = newthingyDESTINATION; //TODO:realname
+                vTaskResume( HANDLETOBLINKY );
 
-    //wait for lock
-        //update DestFt
+                do
+                {
+                    rolling = vCalculateFrequency(); // returns the speed, so when it's done, it's done.
+                    vTaskDelay( (portTickType) FQ_REZ/portTICK_RATE_MS )
+                }while(rolling);
+                xSemaphoreGive( CONTROLSEMAPHOR );
+            }
+        }
+    }
 }
+
 
 
 //used for testing vCalculateFrequency in isolation
