@@ -5,7 +5,7 @@
 //External Items:
 extern TelemetryContainer Info;
 
-typedef enum{GD = 10, P1 = 500, P2 = 510) Floors;
+typedef enum{GD = 10, P1 = 500, P2 = 510} Floors;
 typedef enum{Stopped = 0, Moving} inMotion;
 
 //Function Definitions:
