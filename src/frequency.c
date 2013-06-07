@@ -8,9 +8,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 //Generic units and unit conversion factors
 ///////////////////////////////////////////////////////////////////////////////
-int FQ_UNIT = 1;  //units per foot as in the maxvelocity. we are working with 1 foot units
+float FQ_UNIT = 1.0L;  //units per foot as in the maxvelocity. we are working with 1 foot units
                         //but having the expansivity for other values is good
-int FQ_REZ = 10;  //The number of milliseconds per computation slice
+float FQ_REZ = 10.0L;  //The number of milliseconds per computation slice
 
 //conversion factors
     //Where the unit conversions come from:
@@ -29,9 +29,9 @@ int FQ_REZ = 10;  //The number of milliseconds per computation slice
     // | -------------- X --------- X ------------ X ------- X -------  |    s X ------- = ---------------------- period
     // \         Slice    FQ_REZ ms   FQ_UNIT Tick         s   10 ft/s /              s          TPSCurVel
     //
-float TPSSperFPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000;
-float TPSperFPS   = FQ_UNIT*FQ_REZ/1000;
-float MSperTPS    = (5 * FQ_UNIT * FQ_REZ);
+float TPSSperFPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000.0L;
+float TPSperFPS   = FQ_UNIT*FQ_REZ/1000.0L;
+float MSperTPS    = (5.0L * FQ_UNIT * FQ_REZ);
 
 
 //These are modifyable "constants"
@@ -63,16 +63,16 @@ int vCalculateFrequency()
     //check queue for value, if exists update maxVelocity and Acceleration
 
 
-    flashtime_ms   = (int)MSperTPS/(TPSCurVelocity);
-    TPSAccel       = TPSSperFPSS * acceleration;
+    flashtime_ms   = TPSCurVelocity? (int)MSperTPS/(TPSCurVelocity) : 0;
+    TPSAccel       = TPSSperFPSS * Accel;
     TPSMaxVelocity = TPSperFPS * maxVelocity;
 
     TDestination = FQ_UNIT * DestFt; // this _shouldn't_ change, but it can... as in EMERGENCY STOP
-    TDistance = TPSCurVelocity + tDistance;
-    CurFt = tDistance/FQ_UNIT;
+    TDistance = TPSCurVelocity + TDistance;
+    CurFt = TDistance/FQ_UNIT;
 
     //due to float use == is bad so lets add some wiggle room
-    Dir = (DestFt > Curft + .001L) ? 1 : ((DestFt < Curft - .001L) ? -1 : 0 );
+    Dir = (DestFt > CurFt + .001L) ? 1 : ((DestFt < CurFt - .001L) ? -1 : 0 );
         //NOTE: there is a chance that a change in accel or max velocity will cause unintended behavior,
         // one instance of that is changeing accel so that stoping in time is impossible, this will hopefully
         // catch that and cause an abrupt stop.
@@ -85,7 +85,7 @@ int vCalculateFrequency()
     // solve E2 for T, Plug in T in E1 to solve...
     // Distance = .5 maxVelocity^2 / Accel
     //units are determined by vel and accel, and since we want Ticks TPS and TPSS it is...
-    TStopPoint = TDestination - Dir*((.5 * TPSCurVelocity * TPSCurVelocity) / TPSAccel)
+    TStopPoint = TDestination - Dir*((.5 * TPSCurVelocity * TPSCurVelocity) / TPSAccel);
         //really likeing the Dir variable. if we are headed down we add the stop distance, if up we subtract
 
     //if we are past the stop point in the next slice, time to slow down.
@@ -99,10 +99,36 @@ int vCalculateFrequency()
     CurVel = TPSCurVelocity/TPSperFPS;
     return CurVel;
 }
-
 void vtaskFrequency()
 {
 
     //wait for lock
         //update DestFt
 }
+
+
+//used for testing vCalculateFrequency in isolation
+/*
+#include <iostream.h>
+using namespace std;
+int main()
+{
+    while(1)
+    {
+        DestFt = 500;
+        vCalculateFrequency();
+        system("cls");
+        cout 
+            << "Destination: " << DestFt << "\n"
+            << "TPS DEST   : " << TDestination << "\n"
+            << "Height     : " << CurFt  << "\n"
+            << "TPS HEIGHT : " << TDistance << "\n"
+            << "Speed      : " << CurVel << "\n"
+            << "TPS VEL    : " << TPSCurVelocity << "\n"
+            << "Direction  : " << Dir    << "\n"
+            << "Flash      : " << flashtime_ms << "\n\n";
+        system("ping -w 128.0.0.1 >null");
+    }
+	return 0;
+}
+*/
