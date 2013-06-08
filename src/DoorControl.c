@@ -11,7 +11,7 @@ void DoorControl(void)
 	unsigned char i = 0;
 	unsigned char Interrupted = 0;
 	int DoorState[3] = {/*LED Lib Shit*/};
-	LED_SET(DoorState[2]);
+	LED_B_Set(DoorState[2]);
 	
 	//Task Loop:
 	for(;;)

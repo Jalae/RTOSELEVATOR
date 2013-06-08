@@ -20,13 +20,13 @@ void SerialWriter(void)
 	
 	for(;;)
 	{
-		taskENTER_CRITICAL;
+		taskENTER_CRITICAL();
 		
 		//Do the read:
 		elevation = Info.Elevation;
 		velocity = Info.Velocity;
 		
-		taskEXIT_CRITICAL;
+		taskEXIT_CRITICAL();
 		
 		if(elevation < GD)
 			floor = GD;

@@ -67,7 +67,7 @@ xSemaphoreTake(CN_AnyButton, 0)
     
 
     //Function Definitions:
-    void Button_scanTask(void);
+    extern void Button_scanTask(void);
 
 
 

@@ -4,7 +4,7 @@
 #include "task.h"
 #include "semphr.h"
 #include "queue.h"
-#include "BluetoothUtils.h"	//Serial device driver
+#include "Bluetooth_Utils.h"	//Serial device driver
 #include "Containers.h"
 #include <stdio.h>
 

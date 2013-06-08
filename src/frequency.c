@@ -5,13 +5,13 @@
  * Created on June 6, 2013, 10:00 PM
  */
 
-
+#include "frequency.h"
 ///////////////////////////////////////////////////////////////////////////////
 //Generic units and unit conversion factors
 ///////////////////////////////////////////////////////////////////////////////
-float FQ_UNIT = 1.0L;  //units per foot as in the maxvelocity. we are working with 1 foot units
+const float  FQ_UNIT = 1.0L;  //units per foot as in the maxvelocity. we are working with 1 foot units
                         //but having the expansivity for other values is good
-float FQ_REZ = 10.0L;  //The number of milliseconds per computation slice
+const float FQ_REZ = 10.0L;  //The number of milliseconds per computation slice
 
 //conversion factors
     //Where the unit conversions come from:
@@ -30,9 +30,9 @@ float FQ_REZ = 10.0L;  //The number of milliseconds per computation slice
     // | -------------- X --------- X ------------ X ------- X -------  |    s X ------- = ---------------------- period
     // \         Slice    FQ_REZ ms   FQ_UNIT Tick         s   10 ft/s /              s          TPSCurVel
     //
-float TPSSperFPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000.0L;
-float TPSperFPS   = FQ_UNIT*FQ_REZ/1000.0L;
-float MSperTPS    = (5.0L * FQ_UNIT * FQ_REZ);
+float TPSSperFPSS = 0.0L;
+float TPSperFPS   = 0.0L;
+float MSperTPS    = 0.0L;
 
 
 //These are modifyable "constants"
@@ -67,6 +67,8 @@ extern xQueueHandle VelocityUpdateQ;
 extern xQueueHandle AccelerationUpdateQ;
 
 extern xTaskHandle BlinkyHandle;
+extern xSemaphoreHandle Button_B;
+extern xSemaphoreHandle Button_N;
 
 int vCalculateFrequency()
 {
@@ -125,15 +127,15 @@ int vCalculateFrequency()
 
     //is the new magnitude of velocity greater than the max
     toofast = ( (((TPSCurVelocity + Dir*TPSAccel) > 0) * (TPSCurVelocity + Dir*TPSAccel)) > TPSMaxVelocity );
-    TPSCurVelocity = Dir ? (toofastsean connolly ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
+    TPSCurVelocity = Dir ? (toofast ? Dir*TPSMaxVelocity:(TPSCurVelocity + Dir*TPSAccel)):0;
 
     CurVel = TPSCurVelocity/TPSperFPS;
 
     //write the data for serialwriter
-    taskENTER_CRITICAL;
+    taskENTER_CRITICAL();
     Info.Velocity  = CurVel;
     Info.Elevation = CurFt;
-    taskENTER_CRITICAL;
+    taskENTER_CRITICAL();
 
     return CurVel;
 }
@@ -141,6 +143,11 @@ int vCalculateFrequency()
 void Frequency(void)
 {
     int rolling;
+
+    TPSSperFPSS = FQ_UNIT*FQ_REZ*FQ_REZ/1000000.0L;
+    TPSperFPS = FQ_UNIT*FQ_REZ/1000.0L;
+    MSperTPS = (5.0L * FQ_UNIT * FQ_REZ);
+
     while(1)
     {
         SwitchDuration = -1;
@@ -153,7 +160,7 @@ void Frequency(void)
             do
             {
                 rolling = vCalculateFrequency(); // returns the speed, so when it's done, it's done.
-                vTaskDelay( (portTickType) FQ_REZ/portTICK_RATE_MS )
+                vTaskDelay( (portTickType) FQ_REZ/portTICK_RATE_MS );
             }while(rolling);
             xSemaphoreGive( Dest.DataAvailable );
         }
@@ -163,17 +170,17 @@ void Frequency(void)
 
 void Blinky(void)
 {
-    LED_CLR(LED_MOTOR_MASK);
+    LED_B_Clr(LED_MOTOR_MASK);
     for(;;)
     {
         if(SwitchDuration >= 0)
         {
             vTaskDelay(SwitchDuration / portTICK_RATE_MS);
-            LED_INV(LED_MOTOR_MASK);
+            LED_B_Inv(LED_MOTOR_MASK);
         }
         else
         {
-            LED_CLR(LED_MOTOR_MASK);
+            LED_B_Clr(LED_MOTOR_MASK);
             vTaskSuspend(NULL);
         }
     }

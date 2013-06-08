@@ -20,7 +20,7 @@ extern "C" {
 #define LED_RD0_MASK    0x00000001
 #define LED_RD1_MASK    0x00000002
 #define LED_RD2_MASK    0x00000004
-
+#define LED_MOTOR_MASK  0x00000004
 
     //Macro Definitions:
 #define LED_Init()\

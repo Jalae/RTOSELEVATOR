@@ -25,15 +25,19 @@ xTaskHandle SerialWriteHandle;
 xTaskHandle ButtonScanHandle;
 xTaskHandle FrequencyHandle;
 xTaskHandle BlinkyHandle;
+xTaskHandle DoorHandle;
 
 xSemaphoreHandle DoorOpen;
 xSemaphoreHandle DoorClose;
 
+static void prvSetupHardware(void);
+
 void main(void)
 {
+    prvSetupHardware();
 
     xTaskCreate(
-        SerialWriter,
+        (pdTASK_CODE)SerialWriter,
         "Serial Writer",
         configMINIMAL_STACK_SIZE,
         NULL,
@@ -41,7 +45,7 @@ void main(void)
         &SerialWriteHandle);
 
     xTaskCreate(
-        Button_scanTask,
+        (pdTASK_CODE)Button_scanTask,
         "Button Scan",
         configMINIMAL_STACK_SIZE,
         NULL,
@@ -49,7 +53,7 @@ void main(void)
         &ButtonScanHandle);
 
     xTaskCreate(
-        Frequency,
+        (pdTASK_CODE)Frequency,
         "Button Scan",
         configMINIMAL_STACK_SIZE,
         NULL,
@@ -57,7 +61,7 @@ void main(void)
         &FrequencyHandle);
 
     xTaskCreate(
-        Blinky,
+        (pdTASK_CODE)Blinky,
         "Motor Control",
         configMINIMAL_STACK_SIZE,
         NULL,
@@ -65,7 +69,7 @@ void main(void)
         &BlinkyHandle);
 
     xTaskCreate(
-        DoorControl,
+        (pdTASK_CODE)DoorControl,
         "Door Control",
         configMINIMAL_STACK_SIZE,
         NULL,
